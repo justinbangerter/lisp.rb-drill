@@ -3,7 +3,22 @@ require_relative './types'
 class Parser
 
   def tokenize str
-    x = str.gsub(/[\(\)]/,' \0 ').split(' ')
+    x = str.gsub(/\)/,' \0 ').gsub(/(?<!\')\(/,' \0 ').gsub(/\'\(/,' \0 ').split(' ')
+
+    # Check for quotes (refactor this...)
+    if x.include? "'(" then
+      l = []
+      while x.size > 0 do
+        y = x.shift
+        if y == "'(" then
+          y = [y, *x.shift((x.index ')') + 1)]
+          y = y.join(' ')
+        end
+        l.push y
+      end
+      x = l
+    end
+
     if x.length > 1 and !x.include? '(' then
       ['(', *x, ')'] 
     else
@@ -60,6 +75,8 @@ class Parser
       return l
     elsif ')' == token then
       raise SyntaxError, 'Unexpected closing parenthesis'
+    elsif token.start_with? "'"
+      return token[1..-1]
     else
       return atom token 
     end

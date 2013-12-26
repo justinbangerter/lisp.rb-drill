@@ -67,7 +67,29 @@ class MyTest < Test::Unit::TestCase
 
   def test_boolean
     assert_equal(['true'], tokenize('true'))
+    assert_equal(true, parse('true'))
     assert_equal(true, evaluate('true'))
+
+    assert_equal(true, evaluate('tRue'))
     assert_equal(false, evaluate('false'))
+    assert_equal(false, evaluate('fAlse'))
+  end
+
+  def test_equality
+    assert_equal([ops['eq?'], 1, 1], parse('(eq? 1 1)'))
+    assert_equal(true, evaluate('(eq? 1 1)'))
+    assert_equal(false, evaluate('(eq? 1 2)'))
+
+    assert_equal(true, evaluate('(eq? a a)'))
+    assert_equal(false, evaluate('(eq? a b)'))
+
+    assert_equal(true, evaluate('(eq? true true)'))
+    assert_equal(false, evaluate('(eq? false true)'))
+  end
+
+  def test_quote
+    assert_equal(['(', 'quote' , "'( 1 1 )", ')'], tokenize("(quote '(1 1))"))
+    assert_equal([ops['quote'], '( 1 1 )'], parse("(quote '(1 1))"))
+    assert_equal('( 1 1 )', evaluate("(quote '(1 1))"))
   end
 end

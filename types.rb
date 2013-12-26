@@ -2,9 +2,9 @@ class Sym
 
   attr_accessor :token, :op
 
-  def initialize token, block
+  def initialize token, op
     @token = token
-    @op = block
+    @op = op
   end
 
   def to_s
@@ -17,24 +17,17 @@ module Symbols
   attr_accessor :ops
 
   @ops = {
-    '+' => Sym.new('+', lambda do |l,r| l + r end),
-    '-' => Sym.new('-', lambda do |l,r| l - r end),
-    '/' => Sym.new('/', lambda do |l,r| l / r end),
-    '*' => Sym.new('*', lambda do |l,r| l * r end),
+    '+' => Sym.new('+', lambda do |a| a.map.inject :+ end),
+    '-' => Sym.new('-', lambda do |a| a.map.inject :- end),
+    '/' => Sym.new('/', lambda do |a| a.map.inject :/ end),
+    '*' => Sym.new('*', lambda do |a| a.map.inject :* end),
+    'eq?' => Sym.new('eq?', lambda do |a| a.map.inject do |l,r| l == r end end),
+    'quote' => Sym.new('eq?', lambda do |a| a.join(' ') end),
   }
 
   def Symbols.ops 
     return @ops
   end
-end
-
-class Atom
-end
-
-class Number
-end
-
-class Function
 end
 
 def list *elements
