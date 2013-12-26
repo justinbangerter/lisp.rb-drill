@@ -106,4 +106,11 @@ class MyTest < Test::Unit::TestCase
   def test_cdr
     assert_equal("'( 2 3 )", evaluate("(cdr 1 2 3)"))
   end
+
+  def test_atom
+    assert_equal(true, evaluate("( atom asdf)"))
+    assert_equal(true, evaluate("( atom 1)"))
+    assert_equal(true, evaluate("( atom +)"))
+    assert_equal(false, evaluate("( atom '(1 2 3 4))"))
+  end
 end

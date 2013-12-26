@@ -25,8 +25,17 @@ module Symbols
       end.join(' ')
     end),
     'cons' => Sym.new('cons', lambda do |a| "'( #{[a[0],*a[1..-1]].join(' ')} )" end),
-    'car' => Sym.new('cons', lambda do |a| a[0] end),
-    'cdr' => Sym.new('cons', lambda do |a| "'( #{a[1..-1].join(' ')} )" end),
+    'car' => Sym.new('car', lambda do |a| a[0] end),
+    'cdr' => Sym.new('cdr', lambda do |a| "'( #{a[1..-1].join(' ')} )" end),
+    'atom' => Sym.new('atom', lambda do |a|
+      a.map do |x|
+        return true if x.is_a? Fixnum or x.is_a? Sym
+        return false if x.is_a? Array or x.start_with? "'"
+        return true
+      end.inject do |l, r|
+        l and r
+      end
+    end),
   }
 
   def Symbols.add_op o
@@ -41,20 +50,20 @@ module Symbols
   def Symbols.ops 
     return @ops
   end
-end
+    end
 
-def list *elements
-  return elements
-end
+    def list *elements
+      return elements
+    end
 
-def cons car, cdr
-  return list(car, cdr)
-end
+    def cons car, cdr
+      return list(car, cdr)
+    end
 
-def car list
-  return list[:cons]
-end
+    def car list
+      return list[:cons]
+    end
 
-def cdr list
-  return list[:cdr]
-end
+    def cdr list
+      return list[:cdr]
+    end
