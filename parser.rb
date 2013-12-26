@@ -76,7 +76,7 @@ class Parser
     elsif ')' == token then
       raise SyntaxError, 'Unexpected closing parenthesis'
     elsif token.start_with? "'"
-      return token[1..-1]
+      return token
     else
       return atom token 
     end

@@ -54,8 +54,8 @@ class MyTest < Test::Unit::TestCase
   def test_open_list
     assert_equal(['(','3','4',')'],tokenize('3 4')) 
     assert_equal([3,4], parse('3 4')) 
-    assert_equal('( 3 4 )', evaluate('3 4')) 
-    assert_equal('( test x )', evaluate('test x'))
+    assert_equal('\'( 3 4 )', evaluate('3 4')) 
+    assert_equal('\'( test x )', evaluate('test x'))
   end
 
   def test_basic_math
@@ -89,7 +89,21 @@ class MyTest < Test::Unit::TestCase
 
   def test_quote
     assert_equal(['(', 'quote' , "'( 1 1 )", ')'], tokenize("(quote '(1 1))"))
-    assert_equal([ops['quote'], '( 1 1 )'], parse("(quote '(1 1))"))
-    assert_equal('( 1 1 )', evaluate("(quote '(1 1))"))
+    assert_equal([ops['quote'], "'( 1 1 )"], parse("(quote '(1 1))"))
+    assert_equal("'( 1 1 )", evaluate("(quote '(1 1))"))
+    assert_equal("'( 1 2 3 )", evaluate("(quote '(1 2 3))"))
+    assert_equal("'a", evaluate("(quote a)"))
+  end
+
+  def test_cons
+    assert_equal("'( 1 2 3 )", evaluate("(cons 1 2 3)"))
+  end
+
+  def test_car
+    assert_equal(1, evaluate("(car 1 2 3)"))
+  end
+
+  def test_cdr
+    assert_equal("'( 2 3 )", evaluate("(cdr 1 2 3)"))
   end
 end

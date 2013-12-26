@@ -13,7 +13,7 @@ class Evaluator
         op = z.shift.op
         op.call z
       else
-        "( #{z.join(' ')} )"
+        "'( #{z.join(' ')} )"
       end
 
     else
