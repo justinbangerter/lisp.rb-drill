@@ -95,6 +95,14 @@ module Symbols
       Vars.set(a[0], a[1])
       ''
     end),
+    'cond' => Sym.new('cond', lambda do |a|
+      a.each do |x|
+        if x[0] or x[0] == 'else'
+          return x[1]
+        end
+      end
+      raise SyntaxError, 'No condition satisfied'
+    end),
   }
 
   def Symbols.add_op o
