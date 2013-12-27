@@ -59,8 +59,6 @@ module Symbols
     return true
   end
 
-  attr_accessor :ops
-
   @ops = {
     'eq?' => Sym.new('eq?', lambda do |a|
       a.map.inject do |l,r| l == r end

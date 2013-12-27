@@ -2,17 +2,10 @@ require_relative './types'
 
 class Evaluator
 
-  def evaluate x, ret=true
-    if x.is_a? Array
-
+  def evaluate x, level_one=true
+    result = if x.is_a? Array
       z = x.map do |y|
-        evaluate y
-      end.select do |y|
-        y != ''
-      end
-
-      if z.size == 1
-        z = z[0]
+        evaluate y, false
       end
 
       if z[0].is_a? Sym
@@ -30,17 +23,19 @@ class Evaluator
         x
       end
     end
+
+    if level_one
+      result.pop
+    else
+      result
+    end
   end
 
   def to_s x
     if x.is_a? Array
-      x.select! do |y|
-        !y.nil?
-      end
       x.map! do |y|
         to_s y
       end
-
       "'( #{x.join(' ')} )"
     else
       if Vars.var? x

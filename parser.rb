@@ -3,13 +3,9 @@ require_relative './types'
 class Parser
 
   def tokenize str
-    x = str.gsub(')',' ) ').gsub(/(?<!\')\(/,' \0 ').gsub("'("," '( ").split(' ')
-
-    if x.length > 1 and (!x.include? '(' and !x.include? "'(") then
-      ['(', *x, ')'] 
-    else
-      x
-    end
+    raise SyntaxError, 'Empty file' if str.empty?
+    raise SyntaxError, 'No open lists' if str.include? ' ' and !str.include? '('
+    "( #{str} )".gsub(')',' ) ').gsub(/(?<!\')\(/,' \0 ').gsub("'("," '( ").split(' ')
   end
 
   def atom token
@@ -32,7 +28,7 @@ class Parser
 
   def read tokens
 
-    if tokens.size == 0 then
+    if 0 == tokens.size then
       raise SyntaxError, 'Unexpected end of file'
     end
 
@@ -40,16 +36,11 @@ class Parser
 
     if '(' == token then
       l = []
-      while tokens[0] != ')' do
+      while ')' != tokens[0] do
         l.push read tokens
       end
       tokens.shift
-
-      if tokens.size == 0 or tokens.uniq[0] == ')'
-        return l
-      else
-        return [l, (read tokens)]
-      end
+      return l
     elsif "'(" == token then
       return tokens.shift tokens.index ')'
     elsif ')' == token then

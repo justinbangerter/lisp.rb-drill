@@ -27,10 +27,10 @@ end
 
 class MyTest < Test::Unit::TestCase
   def test_numbers
-    assert_equal(['1'], tokenize('1'))
-    assert_equal(['15'], tokenize('15'))
-    assert_equal(1, parse('1'))
-    assert_equal(15, parse('15'))
+    assert_equal(['(','1', ')'], tokenize('1'))
+    assert_equal(['(','15', ')'], tokenize('15'))
+    assert_equal([1], parse('1'))
+    assert_equal([15], parse('15'))
     assert_equal(1, evaluate('1'))
     assert_equal(15, evaluate('15'))
   end
@@ -41,14 +41,14 @@ class MyTest < Test::Unit::TestCase
   end
 
   def test_lists
-    assert_equal(['(','+','15','5',')'], tokenize('(+ 15 5)'))
-    assert_equal([ops['+'],15,5], parse('(+ 15 5)'))
+    assert_equal(['(','(','+','15','5',')', ')'], tokenize('(+ 15 5)'))
+    assert_equal([[ops['+'],15,5]], parse('(+ 15 5)'))
 
-    assert_equal(["'(",'+','15','5',')'], tokenize("'(+ 15 5)"))
-    assert_equal(['+','15','5'], parse("'(+ 15 5)"))
+    assert_equal(['(',"'(",'+','15','5',')', ')'], tokenize("'(+ 15 5)"))
+    assert_equal([['+','15','5']], parse("'(+ 15 5)"))
 
-    assert_equal(['(','a','(','x','3',')',')'], tokenize('(a (x 3))'))
-    assert_equal(['a',['x',3]], parse('(a (x 3))'))
+    assert_equal(['(','(','a','(','x','3',')',')', ')'], tokenize('(a (x 3))'))
+    assert_equal([['a',['x',3]]], parse('(a (x 3))'))
   end
 
   def test_missing_closing_paren
@@ -60,10 +60,10 @@ class MyTest < Test::Unit::TestCase
   end
 
   def test_open_list
-    assert_equal(['(','3','4',')'],tokenize('3 4')) 
-    assert_equal([3,4], parse('3 4')) 
-    assert_equal([3,4], evaluate('3 4')) 
-    assert_equal(['test','x'], evaluate('test x'))
+    assert_raise(SyntaxError) { tokenize('3 4') } 
+    assert_raise(SyntaxError) { parse('3 4') } 
+    assert_raise(SyntaxError) { evaluate('3 4') } 
+    assert_raise(SyntaxError) { evaluate('test x') } 
   end
 
   def test_basic_math
@@ -74,8 +74,8 @@ class MyTest < Test::Unit::TestCase
   end
 
   def test_boolean
-    assert_equal(['true'], tokenize('true'))
-    assert_equal(true, parse('true'))
+    assert_equal(['(','true',')'], tokenize('true'))
+    assert_equal([true], parse('true'))
     assert_equal(true, evaluate('true'))
 
     assert_equal(true, evaluate('tRue'))
@@ -84,7 +84,7 @@ class MyTest < Test::Unit::TestCase
   end
 
   def test_equality
-    assert_equal([ops['eq?'], 1, 1], parse('(eq? 1 1)'))
+    assert_equal([[ops['eq?'], 1, 1]], parse('(eq? 1 1)'))
     assert_equal(true, evaluate('(eq? 1 1)'))
     assert_equal(false, evaluate('(eq? 1 2)'))
 
@@ -96,8 +96,8 @@ class MyTest < Test::Unit::TestCase
   end
 
   def test_quote
-    assert_equal(['(', 'quote' , "'(", "1", "1", ")", ')'], tokenize("(quote '(1 1))"))
-    assert_equal([ops['quote'], [ "1", "1" ]], parse("(quote '(1 1))"))
+    assert_equal(['(','(', 'quote' , "'(", "1", "1", ")", ')', ')'], tokenize("(quote '(1 1))"))
+    assert_equal([[ops['quote'], [ "1", "1" ]]], parse("(quote '(1 1))"))
     assert_equal("'( 1 1 )", full_run("(quote '(1 1))"))
     assert_equal("'( 1 2 3 )", full_run("(quote '(1 2 3))"))
     assert_equal("'a", evaluate("(quote a)"))
@@ -110,7 +110,7 @@ class MyTest < Test::Unit::TestCase
   def test_car
     assert_raises(SyntaxError) do evaluate("(car 1 2 3)") end
 
-    assert_equal([ops['car'], [1, 2, 3]], parse("(car (1 2 3))"))
+    assert_equal([[ops['car'], [1, 2, 3]]], parse("(car (1 2 3))"))
     assert_equal(1, evaluate("(car (1 2 3))"))
 
     assert_equal(1, evaluate("(car '(1 2 3))"))
@@ -119,7 +119,7 @@ class MyTest < Test::Unit::TestCase
   def test_cdr
     assert_raises(SyntaxError) do evaluate("(cdr 1 2 3)") end
 
-    assert_equal([ops['cdr'], [1, 2, 3]], parse("(cdr (1 2 3))"))
+    assert_equal([[ops['cdr'], [1, 2, 3]]], parse("(cdr (1 2 3))"))
     assert_equal("'( 2 3 )", full_run("(cdr (1 2 3))"))
   end
 
@@ -136,7 +136,7 @@ class MyTest < Test::Unit::TestCase
     assert_equal("", full_run("(define box (cons 3 4))"))
     
     assert_equal(
-      ["(", "define", "box", "(", "cons", "3", "4", ")", ")", "(", "cons", "3", "box", ")"],
+      ['(',"(", "define", "box", "(", "cons", "3", "4", ")", ")", "(", "cons", "3", "box", ")", ')'],
       tokenize("(define box (cons 3 4))\n(cons 3 box)")
     )
     assert_equal(
@@ -160,7 +160,57 @@ class MyTest < Test::Unit::TestCase
   end
 
   def test_empty_list
+    assert_equal(['(','(',')', ')'], tokenize("()"))
+    assert_equal([[]], parse("()"))
+    assert_equal([], evaluate("()"))
+    assert_equal("'(  )", full_run("()"))
+    assert_equal([[[],[]]], parse("(()())"))
+    assert_equal([[],[]], evaluate("(()())"))
+    assert_equal([[[]]], parse("(())"))
+    assert_equal([[]], evaluate("(())"))
+    assert_equal("'( '(  ) )", full_run("(())"))
+
     assert_equal([], evaluate("(cdr (cdr (cdr (1 2 3))))"))
     assert_equal("'(  )", full_run("(cdr (cdr (cdr (1 2 3))))"))
+  end
+
+  def test_nested_lists
+    assert_equal("'( '( '(  ) '(  ) ) '(  ) )", full_run("( ( () () ) ())"))
+    assert_equal("'( '( '(  ) '(  ) ) '(  ) )", full_run("( ( () () ) ())"))
+    assert_equal(['(','(', 'y', '(', '(', ')', 'x', ')', '(', '(', ')', 'x', ')', '(', 'x', ')', ')', ')'], tokenize(<<END
+(y (() x)
+   (() x)
+   (x))
+END
+    ))
+    assert_equal([['y', [[], 'x'], [[], 'x'], ['x']]], parse(<<END
+(y (() x)
+   (() x)
+   (x))
+END
+    ))
+    assert_equal(['y', [[], 'x'], [[], 'x'], ['x']], evaluate(<<END
+(y (() x)
+   (() x)
+   (x))
+END
+    ))
+    assert_equal("'( y '( '(  ) x ) '( '(  ) x ) '( x ) )", full_run(<<END
+(y (() x)
+   (() x)
+   (x))
+END
+  ))
+  end
+
+  def test_cond
+    assert_equal("'three", full_run(<<END
+(define a 3)
+(cond ((eq? a 1) 'one)
+      ((eq? a 2) 'two)
+      ((eq? a 3) 'three)
+      (else 'no-idea))
+END
+                                   ))
   end
 end
