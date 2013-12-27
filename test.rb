@@ -16,8 +16,13 @@ def parse src
   Parser.new.parse src
 end
 
-def evaluate source
-  return Evaluator.new.evaluate parse source
+def evaluate src
+  Vars.clear
+  Evaluator.new.evaluate parse src
+end
+
+def full_run src
+  Evaluator.new.to_s evaluate src
 end
 
 class MyTest < Test::Unit::TestCase
@@ -39,6 +44,9 @@ class MyTest < Test::Unit::TestCase
     assert_equal(['(','+','15','5',')'], tokenize('(+ 15 5)'))
     assert_equal([ops['+'],15,5], parse('(+ 15 5)'))
 
+    assert_equal(["'(",'+','15','5',')'], tokenize("'(+ 15 5)"))
+    assert_equal(['+','15','5'], parse("'(+ 15 5)"))
+
     assert_equal(['(','a','(','x','3',')',')'], tokenize('(a (x 3))'))
     assert_equal(['a',['x',3]], parse('(a (x 3))'))
   end
@@ -54,8 +62,8 @@ class MyTest < Test::Unit::TestCase
   def test_open_list
     assert_equal(['(','3','4',')'],tokenize('3 4')) 
     assert_equal([3,4], parse('3 4')) 
-    assert_equal('\'( 3 4 )', evaluate('3 4')) 
-    assert_equal('\'( test x )', evaluate('test x'))
+    assert_equal([3,4], evaluate('3 4')) 
+    assert_equal(['test','x'], evaluate('test x'))
   end
 
   def test_basic_math
@@ -88,29 +96,71 @@ class MyTest < Test::Unit::TestCase
   end
 
   def test_quote
-    assert_equal(['(', 'quote' , "'( 1 1 )", ')'], tokenize("(quote '(1 1))"))
-    assert_equal([ops['quote'], "'( 1 1 )"], parse("(quote '(1 1))"))
-    assert_equal("'( 1 1 )", evaluate("(quote '(1 1))"))
-    assert_equal("'( 1 2 3 )", evaluate("(quote '(1 2 3))"))
+    assert_equal(['(', 'quote' , "'(", "1", "1", ")", ')'], tokenize("(quote '(1 1))"))
+    assert_equal([ops['quote'], [ "1", "1" ]], parse("(quote '(1 1))"))
+    assert_equal("'( 1 1 )", full_run("(quote '(1 1))"))
+    assert_equal("'( 1 2 3 )", full_run("(quote '(1 2 3))"))
     assert_equal("'a", evaluate("(quote a)"))
   end
 
   def test_cons
-    assert_equal("'( 1 2 3 )", evaluate("(cons 1 2 3)"))
+    assert_equal("'( 1 2 3 )", full_run("(cons 1 2 3)"))
   end
 
   def test_car
-    assert_equal(1, evaluate("(car 1 2 3)"))
+    assert_raises(SyntaxError) do evaluate("(car 1 2 3)") end
+
+    assert_equal([ops['car'], [1, 2, 3]], parse("(car (1 2 3))"))
+    assert_equal(1, evaluate("(car (1 2 3))"))
+
+    assert_equal(1, evaluate("(car '(1 2 3))"))
   end
 
   def test_cdr
-    assert_equal("'( 2 3 )", evaluate("(cdr 1 2 3)"))
+    assert_raises(SyntaxError) do evaluate("(cdr 1 2 3)") end
+
+    assert_equal([ops['cdr'], [1, 2, 3]], parse("(cdr (1 2 3))"))
+    assert_equal("'( 2 3 )", full_run("(cdr (1 2 3))"))
   end
 
   def test_atom
-    assert_equal(true, evaluate("( atom asdf)"))
-    assert_equal(true, evaluate("( atom 1)"))
-    assert_equal(true, evaluate("( atom +)"))
-    assert_equal(false, evaluate("( atom '(1 2 3 4))"))
+    assert_equal(true, evaluate("( atom? asdf)"))
+    assert_equal(true, evaluate("( atom? 1)"))
+    assert_equal(true, evaluate("( atom? +)"))
+    assert_equal(false, evaluate("( atom? '(1 2 3 4))"))
+  end
+
+  def test_define
+    assert_equal("", full_run("(define a 5)"))
+
+    assert_equal("", full_run("(define box (cons 3 4))"))
+    
+    assert_equal(
+      ["(", "define", "box", "(", "cons", "3", "4", ")", ")", "(", "cons", "3", "box", ")"],
+      tokenize("(define box (cons 3 4))\n(cons 3 box)")
+    )
+    assert_equal(
+      [[ops['define'],'box',[ops['cons'],3,4]],[ops['cons'],3,'box']],
+      parse("(define box (cons 3 4))\n(cons 3 box)")
+    )
+    assert_equal([3, [3, 4]], evaluate("(define box (cons 3 4))\n(cons 3 box)"))
+    assert_equal("'( 3 '( 3 4 ) )", full_run("(define box (cons 3 4))\n(cons 3 box)"))
+
+    assert_equal(3, evaluate("(define box (cons 3 4))(car box)"))
+    assert_equal(3, evaluate("(define box (cons 3 4)) (car box)"))
+    assert_equal(3, evaluate("(define box (cons 3 4))\n(car box)"))
+
+    assert_equal([4], evaluate("(define box (cons 3 4))(cdr box)"))
+  end
+
+  def test_multi_define
+    assert_equal(11, full_run("(define a 5)(define b (+ a 1))(+ a b)"))
+    assert_equal(11, full_run("(define a 5) (define b (+ a 1)) (+ a b)"))
+    assert_equal(11, full_run("(define a 5)\n(define b (+ a 1))\n(+ a b)"))
+  end
+
+  def test_empty_list
+    assert_equal([], evaluate("(cdr (cdr (cdr (1 2 3))))"))
+    assert_equal("'(  )", full_run("(cdr (cdr (cdr (1 2 3))))"))
   end
 end

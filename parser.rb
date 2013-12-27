@@ -3,40 +3,12 @@ require_relative './types'
 class Parser
 
   def tokenize str
-    x = str.gsub(/\)/,' \0 ').gsub(/(?<!\')\(/,' \0 ').gsub(/\'\(/,' \0 ').split(' ')
+    x = str.gsub(')',' ) ').gsub(/(?<!\')\(/,' \0 ').gsub("'("," '( ").split(' ')
 
-    # Check for quotes (refactor this...)
-    if x.include? "'(" then
-      l = []
-      while x.size > 0 do
-        y = x.shift
-        if y == "'(" then
-          y = [y, *x.shift((x.index ')') + 1)]
-          y = y.join(' ')
-        end
-        l.push y
-      end
-      x = l
-    end
-
-    if x.length > 1 and !x.include? '(' then
+    if x.length > 1 and (!x.include? '(' and !x.include? "'(") then
       ['(', *x, ')'] 
     else
       x
-    end
-  end
-
-  def Boolean s
-    if s.is_a? String
-      return true if s.downcase === 'true'
-      return false if s.downcase === 'false' 
-      raise ArgumentError "Given string '#{s}' cannot be a Boolean"
-    elsif s.is_a? Number
-      s.abs != 0
-    else
-      return true if s.is_a? TrueClass
-      return false if s.is_a? FalseClass
-      raise ArgumentError "Could not parse variable '#{s}'"
     end
   end
 
@@ -72,10 +44,17 @@ class Parser
         l.push read tokens
       end
       tokens.shift
-      return l
+
+      if tokens.size == 0 or tokens.uniq[0] == ')'
+        return l
+      else
+        return [l, (read tokens)]
+      end
+    elsif "'(" == token then
+      return tokens.shift tokens.index ')'
     elsif ')' == token then
       raise SyntaxError, 'Unexpected closing parenthesis'
-    elsif token.start_with? "'"
+    elsif token.is_a? Fixnum
       return token
     else
       return atom token 
