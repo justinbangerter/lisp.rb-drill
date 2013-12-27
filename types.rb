@@ -12,6 +12,26 @@ def Boolean s
   end
 end
 
+class Lambda
+  def initialize params, body
+    @params = params
+    @body = body
+  end
+
+  def env args
+    raise "Mismatched number of arguments expected #{@params.size} got #{args.size}" if args.size != @params.size
+    env = {}
+    @params.zip(args).each do |x|
+      env[x[0]] = x[1]
+    end
+    env
+  end
+
+  def call evaluator, args
+    evaluator.evaluate @body, env(args), false
+  end
+end
+
 class Sym
 
   attr_accessor :token, :op
@@ -102,6 +122,10 @@ module Symbols
         end
       end
       raise SyntaxError, 'No condition satisfied'
+    end),
+    'lambda' => Sym.new('lambda', lambda do |a|
+      raise SyntaxError, 'Provide arguments and a body to the lambda' if 2 != a.size
+      Lambda.new(a[0],a[1])
     end),
   }
 

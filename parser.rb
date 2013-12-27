@@ -42,7 +42,9 @@ class Parser
       tokens.shift
       return l
     elsif "'(" == token then
-      return tokens.shift tokens.index ')'
+      r = tokens.shift tokens.index ')'
+      tokens.shift
+      return r
     elsif ')' == token then
       raise SyntaxError, 'Unexpected closing parenthesis'
     elsif token.is_a? Fixnum

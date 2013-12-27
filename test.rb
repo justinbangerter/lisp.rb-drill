@@ -211,6 +211,33 @@ END
       ((eq? a 3) 'three)
       (else 'no-idea))
 END
-                                   ))
+    ))
+  end
+
+  def test_lambda
+    assert_equal([
+      [ops['define'],'square',[ops['lambda'],['x'],[ops['*'],'x','x']]],
+      ['square',5]
+    ], parse(<<END
+(define square (lambda (x) (* x x)))
+(square 5)
+END
+    ))
+    assert_equal(25, full_run(<<END
+(define square (lambda (x) (* x x)))
+(square 5)
+END
+    ))
+
+    assert_equal(false, full_run(<<END
+(define divides_evenly? 
+(lambda (x y) 
+  (eq? (* x 
+    (/ x y)) 
+  y)))
+(divides_evenly? 5 2)
+END
+    ))
+
   end
 end

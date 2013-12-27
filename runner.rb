@@ -2,26 +2,32 @@ require_relative './types'
 
 class Evaluator
 
-  def evaluate x, level_one=true
+  def evaluate x, env={}, level_one=true
     result = if x.is_a? Array
-      z = x.map do |y|
-        evaluate y, false
+      if Symbols.ops['lambda'] == x[0]
+        raise SyntaxError, 'Only supply a block and a body to a lambda' if 3 != x.size
+        z = x[0..1].map do |y|
+          evaluate y, env, false
+        end
+        z.push x[2]
+      else
+        z = x.map do |y|
+          evaluate y, env, false
+        end
       end
 
       if z[0].is_a? Sym
         op = z.shift.op
         op.call z
+      elsif z[0].is_a? Lambda
+        l = z.shift
+
+        l.call self, z
       else
         z
       end
-
     else
-
-      if Vars.var? x
-        Vars.var x
-      else
-        x
-      end
+      Vars.var x or env[x] or x
     end
 
     if level_one
